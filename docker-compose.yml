@@ -1,0 +1,14 @@
+version: "3"
+
+services:
+  pytorch:
+    image: pytorch040
+    tty: true
+    volumes:
+    - ~/:/host
+    - /tmp/.X11-unix:/tmp/.X11-unix
+    - $HOME/.Xauthority:/root/.Xauthority
+    - ./src:/workspace
+    environment:
+    - DISPLAY=$DISPLAY
+    - QT_X11_NO_MITSHM=1
