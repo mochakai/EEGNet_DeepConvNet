@@ -72,7 +72,7 @@ class DeepConvNet(nn.Module):
         self.block1.add_module('norm1', nn.BatchNorm2d(25))
         self.block1.add_module('act1', choose_act_func(act_func))
         # [B, 25, 2, 750] -> [B, 25, 1, 373]
-        self.block1.add_module('pool1', nn.AvgPool2d((1, 2), stride=(1, 2)))
+        self.block1.add_module('pool1', nn.MaxPool2d((1, 2), stride=(1, 2)))
         self.block1.add_module('drop1', nn.Dropout(p=0.5))
 
         self.block2 = nn.Sequential()
@@ -81,7 +81,7 @@ class DeepConvNet(nn.Module):
         self.block2.add_module('norm2', nn.BatchNorm2d(50))
         self.block2.add_module('act2', choose_act_func(act_func))
         # [B, 50, 1, 373] -> [B, 50, 1, 184]
-        self.block2.add_module('pool2', nn.AvgPool2d((1, 2), stride=(1, 2)))
+        self.block2.add_module('pool2', nn.MaxPool2d((1, 2), stride=(1, 2)))
         self.block2.add_module('drop2', nn.Dropout(p=0.5))
         
         self.block3 = nn.Sequential()
@@ -90,7 +90,7 @@ class DeepConvNet(nn.Module):
         self.block3.add_module('norm3', nn.BatchNorm2d(100))
         self.block3.add_module('act3', choose_act_func(act_func))
         # [B, 100, 1, 184] -> [B, 100, 1, 90]
-        self.block3.add_module('pool3', nn.AvgPool2d((1, 2), stride=(1, 2)))
+        self.block3.add_module('pool3', nn.MaxPool2d((1, 2), stride=(1, 2)))
         self.block3.add_module('drop3', nn.Dropout(p=0.5))
 
         self.block4 = nn.Sequential()
@@ -99,7 +99,7 @@ class DeepConvNet(nn.Module):
         self.block4.add_module('norm4', nn.BatchNorm2d(200))
         self.block4.add_module('act4', choose_act_func(act_func))
         # [B, 200, 1, 90] -> [B, 200, 1, 43]
-        self.block4.add_module('pool4', nn.AvgPool2d((1, 2), stride=(1, 2)))
+        self.block4.add_module('pool4', nn.MaxPool2d((1, 2), stride=(1, 2)))
         self.block4.add_module('drop4', nn.Dropout(p=0.5))
 
         self.classify = nn.Sequential(
