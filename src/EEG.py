@@ -181,12 +181,21 @@ def main(args):
     net_dict = choose_net(args)
     model_fullname = {'eeg': 'EEGNet', 'dcn': 'DeepConvNet'}
     acc_dict = {}
+    if args.load:
+        net_dict['relu'][0].load_state_dict(torch.load(args.load))
+        net_dict['relu'][0].eval()
+        test_accuracy = cal_accuracy(net_dict['relu'][0], test_x, test_y)
+        print('test_acc: {:.4f}%'.format(test_accuracy * 100))
+        return
     # net[0]: model, net[1]: optimizer, net[2]: loss_function
     for key,net in net_dict.items():
         acc_dict['train_{}'.format(key)] = []
         acc_dict['test_{}'.format(key)] = []
         optimizer, loss_func = handle_param(args, net[0])
-        net.extend([optimizer, loss_func])
+        scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=[50,150], gamma=0.5)
+        net.extend([optimizer, loss_func, scheduler])
+    max_acc = 0
+    file_name = '{}_lr{}_ep{}'.format(args.model, args.learning_rate, args.epochs)
     # start training
     for epoch in range(args.epochs):
         print('-'*10, 'epoch', epoch+1, '-'*10)
@@ -196,6 +205,8 @@ def main(args):
         # training
         for b_x, b_y in train_loader:
             for key,net in net_dict.items():
+                # apply scheduler
+                net[3].step()
                 output = net[0](b_x)
                 loss = net[2](output, b_y.long())
                 loss_dict[key].append(loss.data.numpy())
@@ -204,16 +215,21 @@ def main(args):
                 net[1].step()
         # show loss and accuracy
         for key,net in net_dict.items():
+            net[0].eval()
             train_accuracy = cal_accuracy(net[0], train_x, train_y)
             test_accuracy = cal_accuracy(net[0], test_x, test_y)
+            if test_accuracy > max_acc:
+                max_acc = test_accuracy
+                torch.save(net[0].state_dict(), file_name + '.pkl')
             acc_dict['train_{}'.format(key)].append(train_accuracy)
             acc_dict['test_{}'.format(key)].append(test_accuracy)
             print('---------- {} ({}) ----------'.format(model_fullname[args.model], key))
             print('training loss: {:.6f} | train_acc: {:.6f} | test_acc: {:.6f}'.format(max(loss_dict[key]), train_accuracy, test_accuracy))
+            net[0].train()
+    print('max_acc: {}'.format(max_acc))
     
     # save / show result
     # show_result(range(args.epochs), acc_dict, 'EEG')
-    file_name = '{}_lr{}_ep{}'.format(args.model, args.learning_rate, args.epochs)
     with open(file_name + '.json', 'w') as f:
         json.dump({
             'x': list(range(args.epochs)),
@@ -231,6 +247,7 @@ def get_args():
     parser.add_argument("-lf", "--loss-function", help="loss function", type=str, default='CrossEntropy')
     # parser.add_argument("-act", "--activation-function", help="elu | relu | lrelu", type=str, default='elu')
     parser.add_argument("-m", "--model", help="eeg | dcn", type=str, default='eeg')
+    parser.add_argument("-load", "--load", help="your pkl file path", type=str, default='')
     return parser.parse_args()
 
 
